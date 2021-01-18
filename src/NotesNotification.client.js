@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../supabase/init';
 
-// TODO: Only fetches data so convert to server component!!
+// Nice Excercise: Only fetches data so convert this component to a server component!!
 
 export default function NotesNotification({lastNote}) {
   const [changedRecord, setChangeRecord] = useState(lastNote);
