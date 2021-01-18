@@ -9,6 +9,7 @@
 import {Suspense} from 'react';
 
 import Note from './Note.server';
+import NotesCounter from './NotesCounter.server';
 import NoteList from './NoteList.server';
 import EditButton from './EditButton.client';
 import SearchField from './SearchField.client';
@@ -29,6 +30,9 @@ export default function App({selectedId, isEditing, searchText}) {
             role="presentation"
           />
           <strong>React Notes</strong>
+        </section>
+        <section className="sidebar-menu">
+          <NotesCounter />
         </section>
         <section className="sidebar-menu" role="menubar">
           <SearchField />

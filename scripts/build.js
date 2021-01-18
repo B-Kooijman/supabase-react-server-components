@@ -14,6 +14,8 @@ const webpack = require('webpack');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const ReactServerWebpackPlugin = require('react-server-dom-webpack/plugin');
 
+require('dotenv').config()
+
 const isProduction = process.env.NODE_ENV === 'production';
 rimraf.sync(path.resolve(__dirname, '../build'));
 webpack(
@@ -40,6 +42,13 @@ webpack(
         template: path.resolve(__dirname, '../public/index.html'),
       }),
       new ReactServerWebpackPlugin({isServer: false}),
+      new webpack.DefinePlugin({
+        'process.env': {
+          ENDPOINT: JSON.stringify(process.env.ENDPOINT),
+          SUPABASE_URL: JSON.stringify(process.env.SUPABASE_URL),
+          SUPABASE_KEY: JSON.stringify(process.env.KEY)
+        },      
+      }),
     ],
   },
   (err, stats) => {

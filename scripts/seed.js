@@ -10,8 +10,7 @@
 
 const path = require('path');
 const {readdir, unlink, writeFile} = require('fs/promises');
-const {PrismaClient} = require('@prisma/client');
-const prisma = new PrismaClient();
+const {supabase} = require('../supabase/init');
 
 const NOTES_PATH = './notes';
 const seedData = [
@@ -36,9 +35,13 @@ notes in this app! These note live on the server in the \`notes\` folder.
 ];
 
 async function seed() {
-  await prisma.note.deleteMany();
+  await supabase.from('notes').delete();
+  
   const res = await Promise.all(
-    seedData.map((data) => prisma.note.create({data}))
+    seedData.map((data) => await supabase
+    .from('notes')
+    .insert([data])
+    .single())
   );
 
   const oldNotes = await readdir(path.resolve(NOTES_PATH));
@@ -58,7 +61,6 @@ async function seed() {
       });
     })
   );
-  prisma.$disconnect();
 }
 
 seed();

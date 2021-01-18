@@ -1,22 +1,13 @@
-/**
- * Copyright (c) Facebook, Inc. and its affiliates.
- *
- * This source code is licensed under the MIT license found in the
- * LICENSE file in the root directory of this source tree.
- *
- */
+// We don't have to import React!
 
-import {prisma} from './db.server';
 import SidebarNote from './SidebarNote';
+import {fetch} from 'react-fetch';
 
 export default function NoteList({searchText}) {
-  const notes = prisma.note.findMany({
-    where: {
-      title: {
-        contains: searchText ?? undefined,
-      },
-    },
-  });
+  const serverUrl = `http://localhost:4000/notes` // todo move to env.
+  const fetchUrl = searchText?.length <= 2 ? `${serverUrl}` : `${serverUrl}/search/${searchText}`
+
+  const notes = fetch(fetchUrl).json()
 
   return notes.length > 0 ? (
     <ul className="notes-list">

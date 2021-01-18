@@ -11,6 +11,7 @@
 const register = require('react-server-dom-webpack/node-register');
 register();
 const babelRegister = require('@babel/register');
+const {supabase} = require('../supabase/init');
 
 babelRegister({
   ignore: [/[\\\/](build|server|node_modules)[\\\/]/],
@@ -18,24 +19,14 @@ babelRegister({
   plugins: ['@babel/transform-modules-commonjs'],
 });
 
-/**
- * @typedef { import("@prisma/client").PrismaClient } PrismaClient
- */
-
 const express = require('express');
 const compress = require('compression');
 const {readFileSync} = require('fs');
 const {unlink, writeFile} = require('fs').promises;
 const {pipeToNodeWritable} = require('react-server-dom-webpack/writer');
 const path = require('path');
-const {PrismaClient} = require('@prisma/client');
 const React = require('react');
 const ReactApp = require('../src/App.server').default;
-
-/**
- * @type {PrismaClient}
- */
-const prisma = new PrismaClient();
 
 const PORT = 4000;
 const app = express();
@@ -104,20 +95,24 @@ const NOTES_PATH = path.resolve(__dirname, '../notes');
 app.post(
   '/notes',
   handleErrors(async function(req, res) {
-    const result = await prisma.note.create({
-      data: {
-        body: req.body.body,
-        title: req.body.title,
-      },
-    });
+
+    const newNote = {
+      title: (req.body.title || '').slice(0, 255),
+      body: (req.body.body || '').slice(0, 2048),
+    }
+
+    const { data: note, error } = await supabase
+    .from('notes')
+    .insert([newNote])
+    .single()
 
     await writeFile(
-      path.resolve(NOTES_PATH, `${result.id}.md`),
+      path.resolve(NOTES_PATH, `${note.id}.md`),
       req.body.body,
       'utf8'
     );
 
-    sendResponse(req, res, result.id);
+    sendResponse(req, res, note.id);
   })
 );
 
@@ -125,15 +120,18 @@ app.put(
   '/notes/:id',
   handleErrors(async function(req, res) {
     const updatedId = Number(req.params.id);
-    await prisma.note.update({
-      where: {
-        id: updatedId,
-      },
-      data: {
-        title: req.body.title,
-        body: req.body.body,
-      },
-    });
+    const bla = process.env.ENDPOINT;
+    const updated = {
+      id: updatedId,
+      title: (req.body.title || '').slice(0, 255),
+      body: (req.body.body || '').slice(0, 2048),
+    }
+
+    const { data: note, error } = await supabase
+      .from('notes')
+      .update(updated)
+      .eq('id', updatedId)
+
     await writeFile(
       path.resolve(NOTES_PATH, `${updatedId}.md`),
       req.body.body,
@@ -146,11 +144,11 @@ app.put(
 app.delete(
   '/notes/:id',
   handleErrors(async function(req, res) {
-    await prisma.note.delete({
-      where: {
-        id: Number(req.params.id),
-      },
-    });
+    const { data: note, error } = await supabase.
+      from('notes')
+      .delete()
+      .eq('id', Number(req.params.id))
+
     await unlink(path.resolve(NOTES_PATH, `${req.params.id}.md`));
     sendResponse(req, res, null);
   })
@@ -159,7 +157,11 @@ app.delete(
 app.get(
   '/notes',
   handleErrors(async function(_req, res) {
-    const notes = await prisma.note.findMany();
+    const { data: notes, error } = await supabase
+    .from('notes')
+    .select('*')
+    .order('id')
+
     res.json(notes);
   })
 );
@@ -167,11 +169,34 @@ app.get(
 app.get(
   '/notes/:id',
   handleErrors(async function(req, res) {
-    const note = await prisma.note.findUnique({
-      where: {
-        id: Number(req.params.id),
-      },
-    });
+    const { data: note, error } = await supabase
+    .from('notes')
+    .select()
+    .eq('id', Number(req.params.id))
+    .single()
+    
+  if (error) {
+    console.log('error', error)
+    return res.send('Method not allowed.')
+  }
+
+    res.json(note);
+  })
+);
+
+app.get(
+  '/notes/search/:text',
+  handleErrors(async function(req, res) {
+    const { data: note, error } = await supabase
+    .from('notes')
+    .select()
+    .or(`title.ilike.%${req.params.text}%,body.ilike.%${req.params.text}%`)
+    
+  if (error) {
+    console.log('error', error)
+    return res.send('Method not allowed.')
+  }
+
     res.json(note);
   })
 );

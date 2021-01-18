@@ -11,7 +11,6 @@ import {readFile} from 'react-fs';
 import {format} from 'date-fns';
 import path from 'path';
 
-import {db} from './db.server';
 import NotePreview from './NotePreview';
 import EditButton from './EditButton.client';
 import NoteEditor from './NoteEditor.client';
@@ -56,7 +55,7 @@ export default function Note({selectedId, isEditing}) {
           <h1 className="note-title">{title}</h1>
           <div className="note-menu" role="menubar">
             <small className="note-updated-at" role="status">
-              Last updated on {format(updatedAt, "d MMM yyyy 'at' h:mm bb")}
+            Last updated on {format(updatedAt, "d MMM yyyy 'at' h:mm bb")}
             </small>
             <EditButton noteId={id}>Edit</EditButton>
           </div>
